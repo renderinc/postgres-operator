@@ -599,3 +599,12 @@ Deployment will recreate its pod because of this.   The failover typically
 takes only a few seconds, however, the creation of the replacement
 replica can take longer depending on how much data is being replicated.
 
+=== pgo status
+
+Get general status of your deployed Postgres clusters using the
+*pgo status* command:
+
+....
+pgo status 
+....
+
