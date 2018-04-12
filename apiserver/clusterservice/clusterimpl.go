@@ -301,6 +301,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			return response
 		}
 
+		/**
 		//get the replicas for this cluster
 		log.Debug("calling getReplicas")
 		detail.Replicas, err = getReplicas(&c)
@@ -309,6 +310,7 @@ func TestCluster(name, selector string) msgs.ClusterTestResponse {
 			response.Status.Msg = err.Error()
 			return response
 		}
+		*/
 
 		//get the secrets for this cluster
 		detail.Secrets, err = getSecrets(&c)

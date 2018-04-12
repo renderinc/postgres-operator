@@ -19,6 +19,7 @@ import ()
 
 type StatusDetail struct {
 	Name    string
+	PGSize  string
 	Working bool
 }
 

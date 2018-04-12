@@ -109,10 +109,11 @@ func showStatus(args []string) {
 			fmt.Println("")
 			fmt.Printf("cluster : %s ", result.Name)
 			if result.Working {
-				fmt.Printf("%s\n", GREEN("working"))
+				fmt.Printf("%s", GREEN("up"))
 			} else {
-				fmt.Printf("%s\n", RED("NOT working"))
+				fmt.Printf("%s", RED("down"))
 			}
+			fmt.Printf("\t%s\n", result.PGSize)
 		}
 
 	}
