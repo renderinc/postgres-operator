@@ -18,9 +18,10 @@ limitations under the License.
 import ()
 
 type StatusDetail struct {
-	Name    string
-	PGSize  string
-	Working bool
+	Name      string
+	PGSize    string
+	ClaimSize string
+	Working   bool
 }
 
 // ShowClusterResponse ...

@@ -105,16 +105,33 @@ func showStatus(args []string) {
 			return
 		}
 
+		fmt.Printf("%s", rpad("CLUSTER", " ", 20))
+		fmt.Printf("%s", rpad("STATUS", " ", 10))
+		fmt.Printf("%s", rpad("PGSIZE", " ", 10))
+		fmt.Printf("%s\n", rpad("CAPACITY", " ", 10))
+		fmt.Println("")
+
 		for _, result := range response.Results {
-			fmt.Println("")
-			fmt.Printf("cluster : %s ", result.Name)
+			fmt.Printf("%s", rpad(result.Name, " ", 20))
 			if result.Working {
-				fmt.Printf("%s", GREEN("up"))
+				fmt.Printf("%s", GREEN(rpad("up", " ", 10)))
 			} else {
-				fmt.Printf("%s", RED("down"))
+				fmt.Printf("%s", RED(rpad("down", " ", 10)))
 			}
-			fmt.Printf("\t%s\n", result.PGSize)
+			fmt.Printf("%s", rpad(result.PGSize, " ", 10))
+			fmt.Printf("%s\n", rpad(result.ClaimSize, " ", 10))
 		}
 
 	}
+}
+
+func lpad(value, wid string) string {
+	return fmt.Sprintf("%"+wid+"s", value)
+}
+
+func rpad(value, pad string, plen int) string {
+	for i := len(value); i < plen; i++ {
+		value = value + pad
+	}
+	return value
 }

@@ -24,10 +24,12 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"k8s.io/client-go/kubernetes"
+
 	//"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	//"github.com/spf13/viper"
-	//"k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 	//meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//"k8s.io/apimachinery/pkg/util/validation"
 	//"strconv"
@@ -89,6 +91,7 @@ func StatusCluster(name, selector string) msgs.StatusResponse {
 				return response
 			}
 			result.PGSize = pgSizePretty
+			result.ClaimSize = getClaimCapacity(apiserver.Clientset, c.Spec.Name+"-pvc")
 			response.Results = append(response.Results, result)
 		}
 
@@ -183,5 +186,22 @@ func getPGSize(port, host, databaseName, clusterName string) (string, int, error
 	}
 
 	return dbsizePretty, dbsize, err
+
+}
+
+func getClaimCapacity(clientset *kubernetes.Clientset, claimname string) string {
+	pvc, found, err := kubeapi.GetPVC(clientset, claimname, "demo")
+	if err != nil {
+		return "error"
+	}
+	if !found {
+		log.Error("not found")
+		return "not found"
+	}
+	//fmt.Printf("storage cap is %s\n", pvc.Status.Capacity[v1.ResourceStorage])
+	qty := pvc.Status.Capacity[v1.ResourceStorage]
+	log.Debugf("storage cap string value %s\n", qty.String())
+
+	return qty.String()
 
 }
