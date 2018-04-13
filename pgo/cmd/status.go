@@ -43,10 +43,13 @@ var statusCmd = &cobra.Command{
 	},
 }
 
+var Summary bool
+
 func init() {
 	RootCmd.AddCommand(statusCmd)
 	statusCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
+	statusCmd.Flags().BoolVarP(&Summary, "summary", "", false, "print summary report, json is currently supported")
 }
 
 func showStatus(args []string) {
@@ -122,6 +125,8 @@ func showStatus(args []string) {
 			fmt.Printf("%s\n", rpad(result.ClaimSize, " ", 10))
 		}
 
+		printSummary(&response.AggStatus)
+
 	}
 }
 
@@ -134,4 +139,27 @@ func rpad(value, pad string, plen int) string {
 		value = value + pad
 	}
 	return value
+}
+
+func printSummary(status *msgs.StatusAgg) {
+	fmt.Printf("%s%s\n", rpad("Operator Start:", " ", 20), status.OperatorStartTime)
+	fmt.Printf("%s%10d\n", rpad("Databases", " ", 20), status.NumDatabases)
+	fmt.Printf("%s%10d\n", rpad("Backups", " ", 20), status.NumBackups)
+	fmt.Printf("%s%10d\n", rpad("Claims", " ", 20), status.NumClaims)
+	fmt.Printf("%s%s\n", rpad("Total Volumes", " ", 20), rpad(status.VolumeCap, " ", 10))
+
+	fmt.Printf("%s\n\n", "Databases below 25% Volume Capacity")
+	for i := 0; i < len(status.LowCaps); i++ {
+		fmt.Printf("\t%s\n", status.LowCaps[i])
+	}
+
+	fmt.Printf("%s\n\n", "Database Images")
+	for k, v := range status.DbTags {
+		fmt.Printf("\t%s%s\n", k, v)
+	}
+
+	fmt.Printf("%s\n\n", "Databases Not Ready")
+	for i := 0; i < len(status.NotReady); i++ {
+		fmt.Printf("\t%s\n", status.NotReady[i])
+	}
 }
