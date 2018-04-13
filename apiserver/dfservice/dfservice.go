@@ -1,4 +1,4 @@
-package statusservice
+package dfservice
 
 /*
 Copyright 2017-2018 Crunchy Data Solutions, Inc.
@@ -26,19 +26,19 @@ import (
 )
 
 // StatusHandler ...
-// pgo status mycluster
-// pgo status --selector=env=research
-func StatusHandler(w http.ResponseWriter, r *http.Request) {
+// pgo df mycluster
+// pgo df --selector=env=research
+func DfHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	log.Debug("statusservice.StatusHandler %v\n", vars)
-	//clustername := vars["name"]
+	log.Debug("dfservice.DfHandler %v\n", vars)
+	clustername := vars["name"]
 
-	//selector := r.URL.Query().Get("selector")
-	//if selector != "" {
-	//log.Debug("selector param was [" + selector + "]")
-	//}
+	selector := r.URL.Query().Get("selector")
+	if selector != "" {
+		log.Debug("selector param was [" + selector + "]")
+	}
 
-	err := apiserver.Authn(apiserver.STATUS_PERM, w, r)
+	err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -47,8 +47,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
-	//resp := StatusCluster(clustername, selector)
-	resp := Status()
+	resp := DfCluster(clustername, selector)
 
 	json.NewEncoder(w).Encode(resp)
 }

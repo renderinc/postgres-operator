@@ -20,26 +20,22 @@ import (
 	"fmt"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 	"net/http"
 )
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "status on Clusters",
-	Long: `status displays status of Clusters
+	Short: "status Clusters",
+	Long: `status displays namespace wide info on Clusters
 				For example:
 
-				pgo status
-				pgo status --selector=env=research
+				pgo status 
 				.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("status called")
-		if Selector == "" && len(args) == 0 {
-			fmt.Println(`You must specify the name of the clusters to test.`)
-		} else {
-			showStatus(args)
-		}
+		showStatus(args)
 	},
 }
 
@@ -47,106 +43,64 @@ var Summary bool
 
 func init() {
 	RootCmd.AddCommand(statusCmd)
-	statusCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering ")
 	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format, json is currently supported")
-	statusCmd.Flags().BoolVarP(&Summary, "summary", "", false, "print summary report, json is currently supported")
 }
 
 func showStatus(args []string) {
 
 	log.Debugf("showStatus called %v\n", args)
 
-	log.Debug("selector is " + Selector)
-	if len(args) == 0 && Selector != "" {
-		args = make([]string, 1)
-		args[0] = "all"
+	url := APIServerURL + "/status"
+	log.Debug(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Fatal("NewRequest: ", err)
+		return
 	}
 
-	for _, arg := range args {
-		url := APIServerURL + "/status/" + arg + "?selector=" + Selector
-		log.Debug(url)
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
 
-		req, err := http.NewRequest("GET", url, nil)
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		log.Fatal("Do: ", err)
+		return
+	}
+	log.Debugf("%v\n", resp)
+	StatusCheck(resp)
+
+	defer resp.Body.Close()
+
+	var response msgs.StatusResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		log.Printf("%v\n", resp.Body)
+		log.Error(err)
+		log.Println(err)
+		return
+	}
+
+	if OutputFormat == "json" {
+		b, err := json.MarshalIndent(response, "", "  ")
 		if err != nil {
-			log.Fatal("NewRequest: ", err)
-			return
+			fmt.Println("error:", err)
 		}
-
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(BasicAuthUsername, BasicAuthPassword)
-
-		resp, err := httpclient.Do(req)
-		if err != nil {
-			log.Fatal("Do: ", err)
-			return
-		}
-		log.Debugf("%v\n", resp)
-		StatusCheck(resp)
-
-		defer resp.Body.Close()
-
-		var response msgs.StatusResponse
-
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			log.Printf("%v\n", resp.Body)
-			log.Error(err)
-			log.Println(err)
-			return
-		}
-
-		if OutputFormat == "json" {
-			b, err := json.MarshalIndent(response, "", "  ")
-			if err != nil {
-				fmt.Println("error:", err)
-			}
-			fmt.Println(string(b))
-			return
-		}
-
-		if len(response.Results) == 0 {
-			fmt.Println("nothing found")
-			return
-		}
-
-		fmt.Printf("%s", rpad("CLUSTER", " ", 20))
-		fmt.Printf("%s", rpad("STATUS", " ", 10))
-		fmt.Printf("%s", rpad("PGSIZE", " ", 10))
-		fmt.Printf("%s\n", rpad("CAPACITY", " ", 10))
-		fmt.Println("")
-
-		for _, result := range response.Results {
-			fmt.Printf("%s", rpad(result.Name, " ", 20))
-			if result.Working {
-				fmt.Printf("%s", GREEN(rpad("up", " ", 10)))
-			} else {
-				fmt.Printf("%s", RED(rpad("down", " ", 10)))
-			}
-			fmt.Printf("%s", rpad(result.PGSize, " ", 10))
-			fmt.Printf("%s\n", rpad(result.ClaimSize, " ", 10))
-		}
-
-		printSummary(&response.AggStatus)
-
+		fmt.Println(string(b))
+		return
 	}
+
+	printSummary(&response.Result)
+
 }
 
-func lpad(value, wid string) string {
-	return fmt.Sprintf("%"+wid+"s", value)
-}
+func printSummary(status *msgs.StatusDetail) {
 
-func rpad(value, pad string, plen int) string {
-	for i := len(value); i < plen; i++ {
-		value = value + pad
-	}
-	return value
-}
-
-func printSummary(status *msgs.StatusAgg) {
-	fmt.Printf("%s%s\n", rpad("Operator Start:", " ", 20), status.OperatorStartTime)
-	fmt.Printf("%s%10d\n", rpad("Databases", " ", 20), status.NumDatabases)
-	fmt.Printf("%s%10d\n", rpad("Backups", " ", 20), status.NumBackups)
-	fmt.Printf("%s%10d\n", rpad("Claims", " ", 20), status.NumClaims)
-	fmt.Printf("%s%s\n", rpad("Total Volumes", " ", 20), rpad(status.VolumeCap, " ", 10))
+	fmt.Printf("%s%s\n", util.Rpad("Operator Start:", " ", 20), status.OperatorStartTime)
+	fmt.Printf("%s%10d\n", util.Rpad("Databases", " ", 20), status.NumDatabases)
+	fmt.Printf("%s%10d\n", util.Rpad("Backups", " ", 20), status.NumBackups)
+	fmt.Printf("%s%10d\n", util.Rpad("Claims", " ", 20), status.NumClaims)
+	fmt.Printf("%s%s\n", util.Rpad("Total Volumes", " ", 20), util.Rpad(status.VolumeCap, " ", 10))
 
 	fmt.Printf("%s\n\n", "Databases below 25% Volume Capacity")
 	for i := 0; i < len(status.LowCaps); i++ {

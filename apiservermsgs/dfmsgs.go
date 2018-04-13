@@ -19,19 +19,15 @@ import ()
 
 // this aggregated status comes from the pgo-status container
 // by means of a volume mounted json blob it generates
-type StatusDetail struct {
-	OperatorStartTime string
-	NumDatabases      int
-	NumBackups        int
-	NumClaims         int
-	VolumeCap         string
-	LowCaps           []string
-	DbTags            map[string]string
-	NotReady          []string
+type DfDetail struct {
+	Name      string
+	PGSize    string
+	ClaimSize string
+	Working   bool
 }
 
 // ShowClusterResponse ...
-type StatusResponse struct {
-	Result StatusDetail
+type DfResponse struct {
+	Results []DfDetail
 	Status
 }

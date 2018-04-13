@@ -59,6 +59,12 @@ pgo:	check-go-vars
 	cd pgo && go install pgo.go
 clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+statusimage:	check-go-vars
+	go install pgo-status.go
+	cp $(GOBIN)/pgo-status bin/
+	docker build -t pgo-status -f $(CO_BASEOS)/Dockerfile.pgo-status.$(CO_BASEOS) .
+	docker tag pgo-status $(CO_IMAGE_PREFIX)/pgo-status:$(CO_BASEOS)-$(CO_VERSION)
+#	docker push $(CO_IMAGE_PREFIX)/pgo-apiserver:$(CO_IMAGE_TAG)
 apiserverimage:	check-go-vars
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
