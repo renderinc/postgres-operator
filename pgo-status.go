@@ -17,14 +17,24 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	log "github.com/Sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"time"
 )
 
+var kubeconfig = flag.String("kubeconfig", "./config", "path to kubeconfig")
+
 const OUTPUTPATH = "/pgo-status/status"
+const SLEEP = 30
+
+var Clientset *kubernetes.Clientset
+var Namespace string
 
 func main() {
 
@@ -35,12 +45,31 @@ func main() {
 	} else {
 		log.Info("debug flag set to false")
 	}
+	Namespace = os.Getenv("NAMESPACE")
+	if Namespace == "" {
+		log.Error("namespace env var not set")
+		os.Exit(2)
+	} else {
+		log.Info("namespace set to " + Namespace)
+	}
+
+	flag.Parse()
+	// uses the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientset
+	Clientset, err = kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	log.Infoln("pgo-status starts")
 
 	go collectStatus()
 
-	for i := 0; i < 3; time.Sleep(3 * time.Second) {
+	for i := 0; i < 3; time.Sleep(SLEEP * time.Second) {
 		log.Info("sleeping in main loop")
 	}
 }
@@ -49,10 +78,10 @@ func collectStatus() {
 	log.Info("collecting status")
 
 	for {
-		time.Sleep(3 * time.Second)
+		time.Sleep(SLEEP * time.Second)
 		log.Info("sleeping in collect status loop")
 
-		agg := msgs.StatusAgg{}
+		agg := msgs.StatusDetail{}
 		agg.OperatorStartTime = getOperatorStart()
 		agg.NumBackups = getNumBackups()
 		agg.NumClaims = getNumClaims()
@@ -79,26 +108,48 @@ func writeOutput(b []byte) {
 }
 
 func getOperatorStart() string {
-	t := time.Now()
-	return t.Format(time.RFC3339)
+	pods, err := kubeapi.GetPods(Clientset, "name=postgres-operator", Namespace)
+	if err != nil {
+		log.Error(err)
+		return "error"
+	}
+
+	for _, p := range pods.Items {
+		if string(p.Status.Phase) == "Running" {
+			log.Info("found a postgres-operator pod running phase")
+			log.Info("start time is " + p.Status.StartTime.String())
+			return p.Status.StartTime.String()
+		}
+	}
+	log.Error("a running postgres-operator pod is not found")
+
+	//postgres-operator pod status.startTime
+	//t := time.Now()
+	//return t.Format(time.RFC3339)
+	return "error"
 }
 
 func getNumBackups() int {
+	//count the number of Jobs with pgbackup=true and completionTime not nil
 	return 1
 }
 
 func getNumClaims() int {
+	//count number of PVCs with pgremove=true
 	return 2
 }
 
 func getNumDatabases() int {
+	//count number of Deployments with pg-cluster
 	return 3
 }
 
 func getVolumeCap() string {
+	//sum all PVCs storage capacity
 	return "11G"
 }
 
+//this might move to the df command instead
 func getLowCaps() []string {
 	caps := make([]string, 0)
 	caps = append(caps, "db1")
@@ -106,12 +157,14 @@ func getLowCaps() []string {
 }
 
 func getDBTags() map[string]string {
+	//count all pods with pg-cluster, sum by image tag value
 	tags := make(map[string]string)
 	tags["one"] = "uno"
 	return tags
 }
 
 func getNotReady() []string {
+	//show all pods with pg-cluster that have status.Phase of not Running
 	agg := make([]string, 0)
 	agg = append(agg, "db1")
 	return agg
