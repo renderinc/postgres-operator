@@ -17,8 +17,11 @@ limitations under the License.
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -30,9 +33,6 @@ import (
 	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // DeleteCluster ...
