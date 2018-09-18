@@ -4,9 +4,9 @@ date: 2018-04-23T14:52:09-07:00
 draft: false
 ---
 
-image::crunchy_logo.png[Crunchy Data Logo,width="25%",height="25%", align="center"]
+image::crunchy-logo.jpg[Crunchy Data Logo,width="12%",height="12%", align="center"]
 
-v3.1, {docdate}
+Latest Release: 3.2.0 {docdate}
 
 == Documentation
 
@@ -52,6 +52,7 @@ The Operator project builds and operates with the following containers -
 * link:https://hub.docker.com/r/crunchydata/postgres-operator/[postgres-operator Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-apiserver/[apiserver Container]
 * link:https://hub.docker.com/r/crunchydata/pgo-load/[file load Container]
+* link:https://hub.docker.com/r/crunchydata/pgo-backrest/[backrest interface Container]
 
 This Operator is developed and tested on the following operating systems but is known to run on other operating systems -
 
