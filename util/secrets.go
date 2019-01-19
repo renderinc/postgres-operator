@@ -25,6 +25,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -50,22 +51,25 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	l := ll.WithField("secretName", secretName)
-	pgPassword := GeneratePassword(10)
-	if cl.Spec.RootPassword != "" {
-		l.Debug("using user specified password")
-		pgPassword = cl.Spec.RootPassword
-	}
+	_, pgPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
+	if errors.IsNotFound(err) {
+		pgPassword = GeneratePassword(10)
+		if cl.Spec.RootPassword != "" {
+			l.Debug("using user specified password")
+			pgPassword = cl.Spec.RootPassword
+		}
 
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, pgUser, pgPassword, namespace)
-	if err != nil {
-		l.WithError(err).Error("error creating secret")
+		err = CreateSecret(clientset, cl.Spec.Name, secretName, pgUser, pgPassword, namespace)
+		if err != nil {
+			l.WithError(err).Error("error creating secret")
+		}
 	}
-
 	cl.Spec.RootSecretName = secretName
 	err = Patch(restclient, "/spec/rootsecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		l.WithError(err).Error("error patching cluster")
 	}
+
 
 	///primary
 	primaryUser := "primaryuser"
@@ -73,17 +77,19 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 
 	secretName = cl.Spec.Name + suffix
 	l = ll.WithField("secretName", secretName)
-	primaryPassword := GeneratePassword(10)
-	if cl.Spec.PrimaryPassword != "" {
-		l.Debug("using user specified password")
-		primaryPassword = cl.Spec.PrimaryPassword
-	}
+	_, primaryPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
+	if errors.IsNotFound(err) {
+		primaryPassword = GeneratePassword(10)
+		if cl.Spec.PrimaryPassword != "" {
+			l.Debug("using user specified password")
+			primaryPassword = cl.Spec.PrimaryPassword
+		}
 
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, primaryUser, primaryPassword, namespace)
-	if err != nil {
-		l.WithError(err).Error("error creating secret")
+		err = CreateSecret(clientset, cl.Spec.Name, secretName, primaryUser, primaryPassword, namespace)
+		if err != nil {
+			l.WithError(err).Error("error creating secret")
+		}
 	}
-
 	cl.Spec.PrimarySecretName = secretName
 	err = Patch(restclient, "/spec/primarysecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
@@ -109,18 +115,19 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 		l = ll.WithField("secretName", secretName)
 		l.Debug("using user specified user secret name")
 	}
+	_, userPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
+	if errors.IsNotFound(err) {
+		userPassword = GeneratePassword(10)
+		if cl.Spec.Password != "" {
+			l.Debug("using user specified password for secret")
+			userPassword = cl.Spec.Password
+		}
 
-	userPassword := GeneratePassword(10)
-	if cl.Spec.Password != "" {
-		l.Debug("using user specified password for secret")
-		userPassword = cl.Spec.Password
+		err = CreateSecret(clientset, cl.Spec.Name, secretName, username, userPassword, namespace)
+		if err != nil {
+			l.WithError(err).Error("error creating secret")
+		}
 	}
-
-	err = CreateSecret(clientset, cl.Spec.Name, secretName, username, userPassword, namespace)
-	if err != nil {
-		l.WithError(err).Error("error creating secret")
-	}
-
 	if secretName != cl.Spec.UserSecretName {
 		cl.Spec.UserSecretName = secretName
 		err = Patch(restclient, "/spec/usersecretname", secretName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
