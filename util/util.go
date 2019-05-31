@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	jsonpatch "github.com/evanphx/json-patch"
 	"io/ioutil"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,38 +49,39 @@ func init() {
 // CreateSecContext will generate the JSON security context fragment
 // for a storage type
 func CreateSecContext(fsGroup string, suppGroup string) string {
+	if fsGroup == "" && suppGroup == "" {
+		return ""
+	}
 
-	var sc bytes.Buffer
-	var fsgroup = false
-	var supp = false
+	user := int64(26) // postgres user in the image
+	nonRoot := true
+	secCtx := v1.PodSecurityContext{
+		RunAsUser:          &user,
+		RunAsNonRoot:       &nonRoot,
+	}
 
 	if fsGroup != "" {
-		fsgroup = true
-	}
-	if suppGroup != "" {
-		supp = true
-	}
-	if fsgroup || supp {
-		sc.WriteString("\"securityContext\": {\n")
-	}
-	if fsgroup {
-		sc.WriteString("\t \"fsGroup\": " + fsGroup)
-		if fsgroup && supp {
-			sc.WriteString(",")
+		if g, err := strconv.ParseInt(fsGroup, 10, 64); err != nil {
+			log.Error(err)
+		} else {
+			secCtx.FSGroup = &g
 		}
-		sc.WriteString("\n")
 	}
 
-	if supp {
-		sc.WriteString("\t \"supplementalGroups\": [" + suppGroup + "]\n")
+	if suppGroup != "" {
+		if g, err := strconv.ParseInt(suppGroup, 10, 64); err != nil {
+			log.Error(err)
+		} else {
+			secCtx.SupplementalGroups = []int64{g}
+		}
 	}
 
-	//closing of securityContext
-	if fsgroup || supp {
-		sc.WriteString("},")
+	byts, err := json.MarshalIndent(secCtx, "", "\t")
+	if err != nil {
+		log.Error(err)
 	}
 
-	return sc.String()
+	return fmt.Sprintf(`"securityContext": %s,`, string(byts))
 }
 
 // LoadTemplate will load a JSON template from a path
