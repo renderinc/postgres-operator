@@ -35,6 +35,8 @@ const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+const passwordLength = 32
+
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
@@ -53,7 +55,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	l := ll.WithField("secretName", secretName)
 	_, pgPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
 	if errors.IsNotFound(err) {
-		pgPassword = GeneratePassword(10)
+		pgPassword = GeneratePassword(passwordLength)
 		if cl.Spec.RootPassword != "" {
 			l.Debug("using user specified password")
 			pgPassword = cl.Spec.RootPassword
@@ -79,7 +81,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	l = ll.WithField("secretName", secretName)
 	_, primaryPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
 	if errors.IsNotFound(err) {
-		primaryPassword = GeneratePassword(10)
+		primaryPassword = GeneratePassword(passwordLength)
 		if cl.Spec.PrimaryPassword != "" {
 			l.Debug("using user specified password")
 			primaryPassword = cl.Spec.PrimaryPassword
@@ -117,7 +119,7 @@ func CreateDatabaseSecrets(clientset *kubernetes.Clientset, restclient *rest.RES
 	}
 	_, userPassword, err := GetPasswordFromSecret(clientset, namespace, secretName)
 	if errors.IsNotFound(err) {
-		userPassword = GeneratePassword(10)
+		userPassword = GeneratePassword(passwordLength)
 		if cl.Spec.Password != "" {
 			l.Debug("using user specified password for secret")
 			userPassword = cl.Spec.Password
