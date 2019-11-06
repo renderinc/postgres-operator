@@ -17,16 +17,18 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator/pvc"
-	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
+	"github.com/crunchydata/postgres-operator/util"
 )
 
 // JobController holds the connections for the controller
@@ -34,6 +36,7 @@ type JobController struct {
 	JobClient    *rest.RESTClient
 	JobClientset *kubernetes.Clientset
 	Namespace    string
+	HandleError  func(error)
 }
 
 // Run starts an pod resource controller
@@ -56,6 +59,9 @@ func (c *JobController) watchJobs(ctx context.Context) (cache.Controller, error)
 		"jobs",
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

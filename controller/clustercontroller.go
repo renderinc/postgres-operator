@@ -17,8 +17,8 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
-	//apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -35,6 +35,7 @@ type PgclusterController struct {
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
 	Namespace          string
+	HandleError        func(error)
 }
 
 // Run starts an pgcluster resource controller
@@ -58,6 +59,9 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) (cache.Contro
 		crv1.PgclusterResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

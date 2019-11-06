@@ -20,22 +20,19 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"os"
 	"os/signal"
 	"syscall"
 
+	log "github.com/Sirupsen/logrus"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	// Uncomment the following line to load the gcp plugin (only required to authenticate against GKE clusters).
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
-	"k8s.io/client-go/kubernetes"
 )
 
 var Clientset *kubernetes.Clientset
@@ -80,7 +77,14 @@ func main() {
 		panic(err)
 	}
 
+	ctx, cancelFunc := context.WithCancel(context.Background())
+	defer cancelFunc()
+
 	// start a controller on instances of our custom resource
+
+	handleError := func(err error) {
+		cancelFunc()
+	}
 
 	pgTaskcontroller := controller.PgtaskController{
 		PgtaskConfig:    config,
@@ -88,6 +92,7 @@ func main() {
 		PgtaskScheme:    crdScheme,
 		PgtaskClientset: Clientset,
 		Namespace:       Namespace,
+		HandleError:     handleError,
 	}
 
 	pgIngestcontroller := controller.PgingestController{
@@ -95,6 +100,7 @@ func main() {
 		PgingestScheme:    crdScheme,
 		PgingestClientset: Clientset,
 		Namespace:         Namespace,
+		HandleError:       handleError,
 	}
 
 	pgClustercontroller := controller.PgclusterController{
@@ -102,44 +108,49 @@ func main() {
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
 		Namespace:          Namespace,
+		HandleError:        handleError,
 	}
 	pgReplicacontroller := controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
 		Namespace:          Namespace,
+		HandleError:        handleError,
 	}
 	pgUpgradecontroller := controller.PgupgradeController{
 		PgupgradeClientset: Clientset,
 		PgupgradeClient:    crdClient,
 		PgupgradeScheme:    crdScheme,
 		Namespace:          Namespace,
+		HandleError:        handleError,
 	}
 	pgBackupcontroller := controller.PgbackupController{
 		PgbackupClient:    crdClient,
 		PgbackupScheme:    crdScheme,
 		PgbackupClientset: Clientset,
 		Namespace:         Namespace,
+		HandleError:       handleError,
 	}
 	pgPolicycontroller := controller.PgpolicyController{
 		PgpolicyClient:    crdClient,
 		PgpolicyScheme:    crdScheme,
 		PgpolicyClientset: Clientset,
 		Namespace:         Namespace,
+		HandleError:       handleError,
 	}
 	podcontroller := controller.PodController{
 		PodClientset: Clientset,
 		PodClient:    crdClient,
 		Namespace:    Namespace,
+		HandleError:  handleError,
 	}
 	jobcontroller := controller.JobController{
 		JobClientset: Clientset,
 		JobClient:    crdClient,
 		Namespace:    Namespace,
+		HandleError:  handleError,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
 	go pgTaskcontroller.Run(ctx)
 	go pgIngestcontroller.Run(ctx)
 	go pgClustercontroller.Run(ctx)
@@ -162,7 +173,10 @@ func main() {
 		select {
 		case s := <-signals:
 			log.Infof("received signal %#v, exiting...\n", s)
-			os.Exit(0)
+			return
+		case err := <-ctx.Done():
+			log.Infof("ctx done: %v", err)
+			return
 		}
 	}
 

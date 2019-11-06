@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,6 +38,7 @@ type PgtaskController struct {
 	PgtaskScheme    *runtime.Scheme
 	PgtaskClientset *kubernetes.Clientset
 	Namespace       string
+	HandleError     func(error)
 }
 
 // Run starts an pgtask resource controller
@@ -61,6 +63,9 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) (cache.Controller, 
 		crv1.PgtaskResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

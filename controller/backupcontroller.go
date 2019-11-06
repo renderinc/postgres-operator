@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ type PgbackupController struct {
 	PgbackupScheme    *runtime.Scheme
 	PgbackupClientset *kubernetes.Clientset
 	Namespace         string
+	HandleError       func(error)
 }
 
 // Run starts controller
@@ -57,6 +59,9 @@ func (c *PgbackupController) watchPgbackups(ctx context.Context) (cache.Controll
 		crv1.PgbackupResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

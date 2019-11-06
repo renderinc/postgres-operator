@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ type PgreplicaController struct {
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
 	Namespace          string
+	HandleError        func(error)
 }
 
 // Run starts an pgreplica resource controller
@@ -56,6 +58,9 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) (cache.Contro
 		crv1.PgreplicaResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

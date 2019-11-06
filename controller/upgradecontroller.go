@@ -17,14 +17,16 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	upgradeoperator "github.com/crunchydata/postgres-operator/operator/cluster"
 )
 
 // PgupgradeController holds the connections for the controller
@@ -33,6 +35,7 @@ type PgupgradeController struct {
 	PgupgradeClientset *kubernetes.Clientset
 	PgupgradeScheme    *runtime.Scheme
 	Namespace          string
+	HandleError        func(error)
 }
 
 // Run starts an pgupgrade resource controller
@@ -55,6 +58,9 @@ func (c *PgupgradeController) watchPgupgrades(ctx context.Context) (cache.Contro
 		crv1.PgupgradeResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,

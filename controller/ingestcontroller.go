@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+
 	log "github.com/Sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +35,7 @@ type PgingestController struct {
 	PgingestScheme    *runtime.Scheme
 	PgingestClientset *kubernetes.Clientset
 	Namespace         string
+	HandleError       func(error)
 }
 
 // Run starts an pgcluster resource controller
@@ -56,6 +58,9 @@ func (c *PgingestController) watchPgingests(ctx context.Context) (cache.Controll
 		crv1.PgingestResourcePlural,
 		c.Namespace,
 		fields.Everything())
+	if c.HandleError != nil {
+		source = WrapListWatchWithErrorHandler(source, c.HandleError)
+	}
 
 	_, controller := cache.NewInformer(
 		source,
