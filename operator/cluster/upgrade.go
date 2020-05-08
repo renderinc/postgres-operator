@@ -16,16 +16,21 @@ package cluster
 */
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
 	v1batch "k8s.io/api/batch/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
+	"k8s.io/client-go/tools/cache"
+	watch2 "k8s.io/client-go/tools/watch"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 )
 
 // AddUpgrade creates a pgupgrade job
@@ -71,13 +76,17 @@ func MajorUpgradeProcess(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	log.Info("MajorUpgradeProcess watch starting...")
 
 	lo := meta_v1.ListOptions{LabelSelector: "pgupgrade=true"}
-	fw, err := clientset.Batch().Jobs(namespace).Watch(lo)
-	if err != nil {
-		log.Error("error watching upgrade job" + err.Error())
-		os.Exit(2)
+	jobs := clientset.BatchV1().Jobs(namespace)
+	lw := cache.ListWatch{
+		ListFunc: func(_ meta_v1.ListOptions) (runtime.Object, error) {
+			return jobs.List(lo)
+		},
+		WatchFunc: func(_ meta_v1.ListOptions) (watch.Interface, error) {
+			return jobs.Watch(lo)
+		},
 	}
 
-	_, err4 := watch.Until(0, fw, func(event watch.Event) (bool, error) {
+	_, err4 := watch2.ListWatchUntil(context.Background(), &lw, func(event watch.Event) (bool, error) {
 		log.Infoln("got a pgupgrade job watch event")
 
 		switch event.Type {

@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"

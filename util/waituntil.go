@@ -16,29 +16,36 @@ package util
 */
 
 import (
+	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/api/core/v1"
-	"time"
+	"k8s.io/client-go/tools/cache"
+	twatch "k8s.io/client-go/tools/watch"
 )
 
 // WaitUntilPod ...
 //podPhase is v1.PodRunning
 //timeout := time.Minute
 func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPhase v1.PodPhase, timeout time.Duration, namespace string) error {
-
 	var err error
-	var fw watch.Interface
 
-	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
-	if err != nil {
-		log.Error("error watching pods " + err.Error())
-		return err
+	pods := clientset.CoreV1().Pods(namespace)
+	lw := cache.ListWatch{
+		ListFunc: func(_ meta_v1.ListOptions) (runtime.Object, error) {
+			return pods.List(lo)
+		},
+		WatchFunc: func(_ meta_v1.ListOptions) (watch.Interface, error) {
+			return pods.Watch(lo)
+		},
 	}
 
-	conditions := []watch.ConditionFunc{
+	conditions := []twatch.ConditionFunc{
 		func(event watch.Event) (bool, error) {
 			log.Debug("watch Modified called")
 			gotpod2 := event.Object.(*v1.Pod)
@@ -53,7 +60,9 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPh
 	log.Debug("before watch.Until")
 
 	var lastEvent *watch.Event
-	lastEvent, err = watch.Until(timeout, fw, conditions...)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+	lastEvent, err = twatch.ListWatchUntil(ctx, &lw, conditions...)
 	if err != nil {
 		log.Errorf("timeout waiting for %v error=%s", podPhase, err.Error())
 		return err
@@ -68,76 +77,5 @@ func WaitUntilPod(clientset *kubernetes.Clientset, lo meta_v1.ListOptions, podPh
 }
 
 // WaitUntilPodIsDeleted timeout := time.Minute
-func WaitUntilPodIsDeleted(clientset *kubernetes.Clientset, podname string, timeout time.Duration, namespace string) error {
-
-	var err error
-	var fw watch.Interface
-
-	lo := meta_v1.ListOptions{LabelSelector: "pg-database=" + podname}
-	fw, err = clientset.CoreV1().Pods(namespace).Watch(lo)
-	if err != nil {
-		log.Error("error watching pods 2 " + err.Error())
-		return err
-	}
-
-	conditions := []watch.ConditionFunc{
-		func(event watch.Event) (bool, error) {
-			if event.Type == watch.Deleted {
-				log.Debug("pod delete event received in WaitUntilPodIsDeleted")
-				return true, nil
-			}
-			return false, nil
-		},
-	}
-
-	var lastEvent *watch.Event
-	lastEvent, err = watch.Until(timeout, fw, conditions...)
-	if err != nil {
-		log.Error("timeout waiting for Running " + err.Error())
-		return err
-	}
-	if lastEvent == nil {
-		log.Error("expected event")
-		return err
-	}
-	return err
-
-}
 
 // WaitUntilDeploymentIsDeleted timeout := time.Minute
-func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname string, timeout time.Duration, namespace string) error {
-
-	var err error
-	var fw watch.Interface
-
-	lo := meta_v1.ListOptions{LabelSelector: "name=" + depname}
-	fw, err = clientset.ExtensionsV1beta1().Deployments(namespace).Watch(lo)
-	if err != nil {
-		log.Error("error watching deployments " + err.Error())
-		return err
-	}
-
-	conditions := []watch.ConditionFunc{
-		func(event watch.Event) (bool, error) {
-			log.Infof("waiting for deployment to be deleted got event=%v\n", event.Type)
-			if event.Type == watch.Deleted {
-				log.Info("deployment delete event received in WaitUntilDeploymentIsDeleted")
-				return true, nil
-			}
-			return false, nil
-		},
-	}
-
-	var lastEvent *watch.Event
-	lastEvent, err = watch.Until(timeout, fw, conditions...)
-	if err != nil {
-		log.Error("timeout waiting for deployment to be deleted " + depname + err.Error())
-		return err
-	}
-	if lastEvent == nil {
-		log.Error("expected event")
-		return err
-	}
-	return err
-
-}
