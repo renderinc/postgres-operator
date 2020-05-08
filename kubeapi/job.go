@@ -16,7 +16,7 @@ package kubeapi
 */
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

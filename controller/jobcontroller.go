@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"context"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"

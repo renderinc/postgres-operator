@@ -20,7 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	crdclient "github.com/crunchydata/postgres-operator/client"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"

@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"bufio"
 	"errors"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )

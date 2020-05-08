@@ -17,7 +17,7 @@ package kubeapi
 
 import (
 	"bytes"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"

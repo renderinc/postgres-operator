@@ -3,7 +3,7 @@ package main
 import "fmt"
 import "flag"
 
-import log "github.com/Sirupsen/logrus"
+import log "github.com/sirupsen/logrus"
 
 import "github.com/crunchydata/postgres-operator/kubeapi"
 import "k8s.io/client-go/tools/clientcmd"

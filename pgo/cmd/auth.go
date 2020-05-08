@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"crypto/tls"
 	"crypto/x509"
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
