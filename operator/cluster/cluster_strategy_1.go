@@ -21,18 +21,20 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/util"
+	"os"
+
 	jsonpatch "github.com/evanphx/json-patch"
-	"k8s.io/api/extensions/v1beta1"
+	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 )
 
 const AffinityInOperator = "In"
@@ -155,7 +157,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := v1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
@@ -346,7 +348,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
-	replicaDeployment := v1beta1.Deployment{}
+	replicaDeployment := v1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
@@ -600,7 +602,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		operator.DeploymentTemplate1.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
-	replicaDeployment := v1beta1.Deployment{}
+	replicaDeployment := v1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())

@@ -25,8 +25,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -168,7 +168,7 @@ func relabel(pod *v1.Pod, clientset *kubernetes.Clientset, namespace, clusterNam
 }
 
 // TODO this code came mostly from util/util.go...refactor to merge
-func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment *v1beta1.Deployment, clusterName string, newLabels map[string]string) error {
+func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment *appsv1.Deployment, clusterName string, newLabels map[string]string) error {
 
 	var err error
 

@@ -22,7 +22,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	"k8s.io/api/extensions/v1beta1"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -78,7 +78,7 @@ func CreateIngest(namespace string, clientset *kubernetes.Clientset, client *res
 		operator.IngestjobTemplate.Execute(os.Stdout, jobFields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := v1.Deployment{}
 	err = json.Unmarshal(doc2.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling ingest json into Deployment " + err.Error())

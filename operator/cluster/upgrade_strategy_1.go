@@ -27,8 +27,8 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
+	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -178,7 +178,7 @@ func (r Strategy1) MajorUpgradeFinalize(clientset *kubernetes.Clientset, client 
 		operator.DeploymentTemplate1.Execute(os.Stdout, deploymentFields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())

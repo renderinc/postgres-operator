@@ -24,8 +24,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/api/extensions/v1beta1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
@@ -89,7 +89,7 @@ func AddPgpool(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl 
 		operator.PgpoolTemplate.Execute(os.Stdout, fields)
 	}
 
-	deployment := v1beta1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(doc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling pgpool json into Deployment " + err.Error())

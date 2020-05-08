@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/api/extensions/v1beta1"
+	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -273,7 +273,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 	//return a deployment target that has a Ready database
 	log.Debugf("deps len %d\n", len(deployments.Items))
 	found := false
-	readyDeps := make([]v1beta1.Deployment, 0)
+	readyDeps := make([]appsv1.Deployment, 0)
 	for _, dep := range deployments.Items {
 		ready := getPodStatus(clientset, dep.Name, ns)
 		if ready {
@@ -296,7 +296,7 @@ func getTargetDeployment(restclient *rest.RESTClient, clientset *kubernetes.Clie
 
 	var value uint64
 	value = 0
-	var selectedDeployment v1beta1.Deployment
+	var selectedDeployment appsv1.Deployment
 
 	for _, d := range readyDeps {
 		target := util.ReplicationInfo{}
