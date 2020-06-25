@@ -208,7 +208,7 @@ func updateLabels(namespace string, clientset *kubernetes.Clientset, deployment 
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debug("error patching deployment " + err.Error())
 	}

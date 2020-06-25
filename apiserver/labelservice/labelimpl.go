@@ -175,7 +175,7 @@ func updateLabels(deployment *v1beta1.Deployment, clusterName string, newLabels 
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.AppsV1().Deployments(apiserver.Namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debug("error patching deployment " + err.Error())
 	}

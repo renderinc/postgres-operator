@@ -35,7 +35,7 @@ func main() {
 	//get the deployment
 	depName := "eggs"
 	var deployment *v1beta1.Deployment
-	deployment, err = clientset.ExtensionsV1beta1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
+	deployment, err = clientset.AppsV1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -88,7 +88,7 @@ func main() {
 		fmt.Println("created merge patch")
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(depName, types.MergePatchType, patchBytes, "")
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(depName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		panic("error patching deployment " + err.Error())
 	}

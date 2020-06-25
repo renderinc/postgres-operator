@@ -34,7 +34,7 @@ func DeleteDeployment(clientset *kubernetes.Clientset, name, namespace string) e
 	delProp = meta_v1.DeletePropagationForeground
 	delOptions.PropagationPolicy = &delProp
 
-	err := clientset.ExtensionsV1beta1().Deployments(namespace).Delete(name, &delOptions)
+	err := clientset.AppsV1().Deployments(namespace).Delete(name, &delOptions)
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting Deployment " + name)
@@ -108,7 +108,7 @@ func PatchDeployment(clientset *kubernetes.Clientset, name, namespace, jsonpath,
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error patching Deployment " + name)
@@ -139,7 +139,7 @@ func PatchReplicas(clientset *kubernetes.Clientset, name, namespace, jsonpath st
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error patching Deployment " + name)
@@ -178,7 +178,7 @@ func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1.De
 		return err
 	}
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(origDeployment.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Error("error merge patching Deployment " + newname)
