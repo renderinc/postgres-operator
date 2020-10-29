@@ -44,6 +44,7 @@ type affinityTemplateFields struct {
 	NodeLabelKey   string
 	NodeLabelValue string
 	OperatorValue  string
+	ClusterName    string
 }
 
 type containerResourcesTemplateFields struct {
@@ -138,7 +139,7 @@ func (r Strategy1) AddCluster(clientset *kubernetes.Clientset, client *rest.REST
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In", cl.Spec.Name),
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		ConfVolume:         GetConfVolume(clientset, cl.Spec.CustomConfig, namespace),
 		CollectAddon:       GetCollectAddon(clientset, namespace, &cl.Spec),
@@ -327,7 +328,7 @@ func (r Strategy1) CreateReplica(serviceName string, clientset *kubernetes.Clien
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		ContainerResources: GetContainerResources(&cl.Spec.ContainerResources),
 		UserSecretName:     cl.Spec.UserSecretName,
-		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn"),
+		NodeSelector:       GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "NotIn", clusterName),
 	}
 
 	switch cl.Spec.ReplicaStorage.StorageType {
@@ -385,7 +386,7 @@ func getPrimaryLabels(Name string, ClusterName string, replicaFlag bool, userLab
 // replica, use the node labels from the primary in this case
 // use In as an operator when a node-label is specified on the replica
 // use the node labels from the replica in this case
-func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
+func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string, clusterName string) string {
 	var operator, key, value string
 	log.Debug("GetReplicaAffinity ")
 	if replicaLabels[util.LABEL_NODE_LABEL_KEY] != "" {
@@ -399,11 +400,11 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 		key = clusterLabels[util.LABEL_NODE_LABEL_KEY]
 		value = clusterLabels[util.LABEL_NODE_LABEL_VALUE]
 	}
-	return GetAffinity(key, value, operator)
+	return GetAffinity(key, value, operator, clusterName)
 }
 
 // GetAffinity ...
-func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
+func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string, clusterName string) string {
 	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator)
 	output := ""
 	if nodeLabelKey == "" {
@@ -414,6 +415,7 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	affinityTemplateFields.NodeLabelKey = nodeLabelKey
 	affinityTemplateFields.NodeLabelValue = nodeLabelValue
 	affinityTemplateFields.OperatorValue = affoperator
+	affinityTemplateFields.ClusterName = clusterName
 
 	var affinityDoc bytes.Buffer
 	err := operator.AffinityTemplate1.Execute(&affinityDoc, affinityTemplateFields)
@@ -579,7 +581,7 @@ func (r Strategy1) Scale(clientset *kubernetes.Clientset, client *rest.RESTClien
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,
-		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		NodeSelector:      GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels, replica.Spec.ClusterName),
 		CollectAddon:      GetCollectAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:       GetBadgerAddon(clientset, namespace, &cluster.Spec),
 	}
