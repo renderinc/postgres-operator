@@ -405,7 +405,7 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string, clusterN
 
 // GetAffinity ...
 func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string, clusterName string) string {
-	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator)
+	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] operator=[%s] and clusterName=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator, clusterName)
 	output := ""
 	if nodeLabelKey == "" {
 		return output
